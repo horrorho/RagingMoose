@@ -98,6 +98,7 @@ class LZFSEBlockDecoder {
                 .state(bh.mState());
         dValueDecoder.load(bh.dFreq(), D_EXTRA_BITS, D_BASE_VALUE)
                 .state(bh.dState());
+        
         literalDecoder.load(bh.literalFreq())
                 .state(bh.literalState0(), bh.literalState1(), bh.literalState2(), bh.literalState3())
                 .nLiteralPayloadBytes(bh.nLiteralPayloadBytes())
@@ -120,7 +121,7 @@ class LZFSEBlockDecoder {
     LZFSEBlockDecoder apply(@WillNotClose InputStream is, @WillNotClose MatchOutputStream maos)
             throws IOException, LZFSEDecoderException {
         try {
-            literalDecoder.decode(is, literals);
+            literalDecoder.decodeInto(is, literals);
             int literal = 0;
 
             initBuffer();
@@ -129,7 +130,7 @@ class LZFSEBlockDecoder {
                     .init(lmdBits);
 
             int d = 0;
-            while (symbols > 0) {
+            while (symbols-- > 0) {
                 in.fill();
                 int l = lValueDecoder.decode(in);
                 int m = mValueDecoder.decode(in);
@@ -137,11 +138,9 @@ class LZFSEBlockDecoder {
                 d = _d == 0 ? d : _d;
 
                 maos.write(literals, literal, l);
-                literal += l;
                 maos.writeMatch(d, m);
-                symbols--;
+                literal += l;
             }
-
             return this;
 
         } catch (IllegalArgumentException ex) {

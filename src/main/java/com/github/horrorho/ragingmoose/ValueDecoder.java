@@ -24,6 +24,7 @@
 package com.github.horrorho.ragingmoose;
 
 import javax.annotation.Nonnull;
+import javax.annotation.ParametersAreNonnullByDefault;
 import javax.annotation.concurrent.NotThreadSafe;
 
 /**
@@ -31,87 +32,52 @@ import javax.annotation.concurrent.NotThreadSafe;
  * @author Ayesha
  */
 @NotThreadSafe
+@ParametersAreNonnullByDefault
 class ValueDecoder {
 
-    static class Entry {
+    @NotThreadSafe
+    static class Entry extends TANS.Entry {
 
-        int nBits;
-        int nBase;
-        int vBits;
-        int vBase;
+        private int vBits;
+        private int vBase;
+
+        @Nonnull
+        Entry set(byte[] symbolVBits, int[] symbolVBase) {
+            int s = symbol() & 0xFF;
+            this.vBase = symbolVBase[s];
+            this.vBits = symbolVBits[s];
+            return this;
+        }
     }
 
-    private final Entry[] table;
-    private int state;
+    private final TANS<Entry> tans;
+    private final TANS.State state;
 
     ValueDecoder(int nStates) {
-        this.table = new Entry[nStates];
-        for (int i = 0; i < table.length; i++) {
-            this.table[i] = new Entry();
-        }
-        state = -1;
+        this.tans = new TANS<>(nStates, Entry::new, Entry[]::new);
+        this.state = new TANS.State();
     }
 
     @Nonnull
     ValueDecoder load(short[] weights, byte[] symbolVBits, int[] symbolVBase) throws LZFSEDecoderException {
-        try {
-            int nSymbols = weights.length;
-            int nStates = table.length;
-            int nZero = Integer.numberOfLeadingZeros(nStates);
-
-            int t = 0;
-            for (int i = 0; i < nSymbols; i++) {
-                int f = weights[i];
-                if (f == 0) {
-                    continue;
-                }
-
-                int k = Integer.numberOfLeadingZeros(f) - nZero;
-                int x = (2 * nStates >>> k) - f;
-
-                byte vBits = symbolVBits[i];
-                int vBase = symbolVBase[i];
-
-                for (int j = 0; j < f; j++) {
-                    Entry e = table[t++];
-                    e.vBase = vBase;
-                    e.vBits = vBits;
-
-                    if (j < x) {
-                        e.nBits = k + vBits;
-                        e.nBase = (f + j << k) - nStates;
-                    } else {
-                        e.nBits = k - 1 + vBits;
-                        e.nBase = j - x << k - 1;
-                    }
-                }
-            }
-            return this;
-            
-        } catch (ArrayIndexOutOfBoundsException ex) {
-            throw new LZFSEDecoderException(ex);
-        }
+        tans.init(weights)
+                .foreach((u, v) -> v.set(symbolVBits, symbolVBase));
+        return this;
     }
 
     @Nonnull
     ValueDecoder state(int state) {
-        this.state = state;
+        this.state.value(state);
         return this;
     }
 
-    int decode(BitInStream is) throws LZFSEDecoderException {
-        Entry e = table[state];
-        int bits = (int) is.read(e.nBits);
-        int vBits = e.vBits;
-        state = e.nBase + (bits >>> vBits);
-        return e.vBase + (bits & (1 << vBits) - 1);
+    int decode(BitInStream in) throws LZFSEDecoderException {
+        Entry e = tans.transition(state, in);
+        return e.vBase + (int) in.read(e.vBits);
     }
 
     @Override
     public String toString() {
-        return "ValueDecoder{"
-                + "table.length=" + table.length
-                + ", state=" + state
-                + '}';
+        return "ValueDecoder{" + "tans=" + tans + ", state=" + state + '}';
     }
 }
