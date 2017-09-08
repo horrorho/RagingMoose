@@ -39,7 +39,7 @@ import javax.annotation.concurrent.NotThreadSafe;
  */
 @NotThreadSafe
 @ParametersAreNonnullByDefault
-class LZFSEBlockDecoder {
+class LZFSEBlockDecoder implements LZFSEConstants {
 
     private static final byte[] L_EXTRA_BITS = {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 3, 5, 8
@@ -74,13 +74,13 @@ class LZFSEBlockDecoder {
         131068, 163836, 196604, 229372
     };
 
-    private final ValueDecoder lValueDecoder = new ValueDecoder(LZFSE.ENCODE_L_STATES);
-    private final ValueDecoder mValueDecoder = new ValueDecoder(LZFSE.ENCODE_M_STATES);
-    private final ValueDecoder dValueDecoder = new ValueDecoder(LZFSE.ENCODE_D_STATES);
+    private final ValueDecoder lValueDecoder = new ValueDecoder(ENCODE_L_STATES);
+    private final ValueDecoder mValueDecoder = new ValueDecoder(ENCODE_M_STATES);
+    private final ValueDecoder dValueDecoder = new ValueDecoder(ENCODE_D_STATES);
 
-    private final LiteralDecoder literalDecoder = new LiteralDecoder(LZFSE.ENCODE_LITERAL_STATES);
+    private final LiteralDecoder literalDecoder = new LiteralDecoder(ENCODE_LITERAL_STATES);
 
-    private final byte[] literals = new byte[LZFSE.LITERALS_PER_BLOCK + 64];
+    private final byte[] literals = new byte[LITERALS_PER_BLOCK + 64];
 
     @Nullable
     private ByteBuffer bb;
@@ -98,7 +98,7 @@ class LZFSEBlockDecoder {
                 .state(bh.mState());
         dValueDecoder.load(bh.dFreq(), D_EXTRA_BITS, D_BASE_VALUE)
                 .state(bh.dState());
-        
+
         literalDecoder.load(bh.literalFreq())
                 .state(bh.literalState0(), bh.literalState1(), bh.literalState2(), bh.literalState3())
                 .nLiteralPayloadBytes(bh.nLiteralPayloadBytes())

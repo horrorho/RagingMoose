@@ -39,7 +39,7 @@ import javax.annotation.concurrent.NotThreadSafe;
  */
 @NotThreadSafe
 @ParametersAreNonnullByDefault
-class LZFSEBlockHeader {
+class LZFSEBlockHeader implements LZFSEConstants {
 
     static void checkFrequencyTable(short[] tbl, int nStates) throws LZFSEDecoderException {
         int sum = 0;
@@ -141,16 +141,16 @@ class LZFSEBlockHeader {
         return (int) (v >>> offset & (1L << nBits) - 1L);
     }
 
-    private static final int V1_SIZE = 48 + LZFSE.ENCODE_SYMBOLS * 2;
+    private static final int V1_SIZE = 48 + ENCODE_SYMBOLS * 2;
 
     private static final int V2_SIZE = 28;
 
     private final ByteBuffer bb = ByteBuffer.allocate(V1_SIZE).order(LITTLE_ENDIAN);
 
-    private final short[] literalFreq = new short[LZFSE.ENCODE_LITERAL_SYMBOLS];
-    private final short[] lFreq = new short[LZFSE.ENCODE_L_SYMBOLS];
-    private final short[] mFreq = new short[LZFSE.ENCODE_M_SYMBOLS];
-    private final short[] dFreq = new short[LZFSE.ENCODE_D_SYMBOLS];
+    private final short[] literalFreq = new short[ENCODE_LITERAL_SYMBOLS];
+    private final short[] lFreq = new short[ENCODE_L_SYMBOLS];
+    private final short[] mFreq = new short[ENCODE_M_SYMBOLS];
+    private final short[] dFreq = new short[ENCODE_D_SYMBOLS];
 
     private int nRawBytes;
     private int nPayloadBytes;
@@ -249,10 +249,10 @@ class LZFSEBlockHeader {
     }
 
     void checkFrequencyTables() throws LZFSEDecoderException {
-        checkFrequencyTable(lFreq, LZFSE.ENCODE_L_STATES);
-        checkFrequencyTable(mFreq, LZFSE.ENCODE_M_STATES);
-        checkFrequencyTable(dFreq, LZFSE.ENCODE_D_STATES);
-        checkFrequencyTable(literalFreq, LZFSE.ENCODE_LITERAL_STATES);
+        checkFrequencyTable(lFreq, ENCODE_L_STATES);
+        checkFrequencyTable(mFreq, ENCODE_M_STATES);
+        checkFrequencyTable(dFreq, ENCODE_D_STATES);
+        checkFrequencyTable(literalFreq, ENCODE_LITERAL_STATES);
     }
 
     @Nonnull

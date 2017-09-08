@@ -30,7 +30,7 @@ import javax.annotation.concurrent.Immutable;
  * @author Ayesha
  */
 @Immutable
-final class LZFSE {
+interface LZFSEConstants {
 
     static final int ENCODE_HASH_BITS = 14;
     static final int ENCODE_HASH_WIDTH = 4;
@@ -66,7 +66,4 @@ final class LZFSE {
 
     static final int D_BUFFER_SIZE = 262144;
     static final int D_BUFFER_MASK = 0x0003FFFF;
-
-    private LZFSE() {
-    }
 }

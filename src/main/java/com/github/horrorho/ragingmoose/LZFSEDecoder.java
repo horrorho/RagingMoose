@@ -41,7 +41,7 @@ import javax.annotation.concurrent.NotThreadSafe;
  */
 @NotThreadSafe
 @ParametersAreNonnullByDefault
-public class LZFSEDecoder {
+public class LZFSEDecoder implements LZFSEConstants {
 
     private final ByteBuffer mb = ByteBuffer.allocate(4).order(LITTLE_ENDIAN);
 
@@ -76,8 +76,8 @@ public class LZFSEDecoder {
                 new RawBlockHeader(),
                 new LZFSEBlockDecoder(),
                 new LZVNBlockDecoder(),
-                new byte[LZFSE.D_BUFFER_SIZE],
-                LZFSE.D_BUFFER_MASK);
+                new byte[D_BUFFER_SIZE],
+                D_BUFFER_MASK);
     }
 
     @Nonnull
@@ -87,19 +87,19 @@ public class LZFSEDecoder {
         while (true) {
             int magic = magic(is);
             switch (magic) {
-                case LZFSE.COMPRESSEDV2_BLOCK_MAGIC:
+                case COMPRESSEDV2_BLOCK_MAGIC:
                     v2(is, maos);
                     break;
-                case LZFSE.COMPRESSEDV1_BLOCK_MAGIC:
+                case COMPRESSEDV1_BLOCK_MAGIC:
                     v1(is, maos);
                     break;
-                case LZFSE.COMPRESSEDLZVN_BLOCK_MAGIC:
+                case COMPRESSEDLZVN_BLOCK_MAGIC:
                     vn(is, maos);
                     break;
-                case LZFSE.UNCOMPRESSED_BLOCK_MAGIC:
+                case UNCOMPRESSED_BLOCK_MAGIC:
                     raw(is, maos);
                     break;
-                case LZFSE.ENDOFSTREAM_BLOCK_MAGIC:
+                case ENDOFSTREAM_BLOCK_MAGIC:
                     maos.flush();
                     return this;
                 default:
