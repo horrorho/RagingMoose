@@ -48,7 +48,7 @@ public class LZFSEDecoder {
     private final LZFSEBlockHeader lzfseBlockHeader;
     private final LZVNBlockHeader lzvnBlockHeader;
     private final RawBlockHeader rawBlockHeader;
-    private final LZFSEBlockDecoder decoder;
+    private final LZFSEBlockDecoder lzfseDecoder;
     private final LZVNBlockDecoder lzvnDecoder;
 
     private final byte[] dBuffer;
@@ -57,14 +57,14 @@ public class LZFSEDecoder {
     LZFSEDecoder(LZFSEBlockHeader lzfseBlockHeader,
             LZVNBlockHeader lzvnBlockHeader,
             RawBlockHeader rawBlockHeader,
-            LZFSEBlockDecoder decoder,
+            LZFSEBlockDecoder lzfseDecoder,
             LZVNBlockDecoder lzvnDecoder,
             byte[] dBuffer,
             int dBufferMask) {
         this.lzfseBlockHeader = Objects.requireNonNull(lzfseBlockHeader);
         this.lzvnBlockHeader = Objects.requireNonNull(lzvnBlockHeader);
         this.rawBlockHeader = Objects.requireNonNull(rawBlockHeader);
-        this.decoder = Objects.requireNonNull(decoder);
+        this.lzfseDecoder = Objects.requireNonNull(lzfseDecoder);
         this.lzvnDecoder = Objects.requireNonNull(lzvnDecoder);
         this.dBuffer = Objects.requireNonNull(dBuffer);
         this.dBufferMask = dBufferMask;
@@ -111,14 +111,14 @@ public class LZFSEDecoder {
     void v1(@WillNotClose InputStream is, @WillNotClose MatchOutputStream maos)
             throws IOException, LZFSEDecoderException {
         lzfseBlockHeader.loadV1(is);
-        decoder.init(lzfseBlockHeader)
+        lzfseDecoder.init(lzfseBlockHeader)
                 .apply(is, maos);
     }
 
     void v2(@WillNotClose InputStream is, @WillNotClose MatchOutputStream maos)
             throws IOException, LZFSEDecoderException {
         lzfseBlockHeader.loadV2(is);
-        decoder.init(lzfseBlockHeader)
+        lzfseDecoder.init(lzfseBlockHeader)
                 .apply(is, maos);
     }
 
@@ -147,7 +147,7 @@ public class LZFSEDecoder {
                 + ", lzfseBlockHeader=" + lzfseBlockHeader
                 + ", lzvnBlockHeader=" + lzvnBlockHeader
                 + ", rawBlockHeader=" + rawBlockHeader
-                + ", decoder=" + decoder
+                + ", decoder=" + lzfseDecoder
                 + ", lzvnDecoder=" + lzvnDecoder
                 + ", dBuffer=" + dBuffer.length
                 + ", dBufferMask=" + dBufferMask
