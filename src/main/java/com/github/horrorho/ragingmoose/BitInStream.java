@@ -54,6 +54,7 @@ class BitInStream {
         this(in, 0, 0);
     }
 
+    @Nonnull
     BitInStream init(int n) throws LZFSEDecoderException {
         try {
             if (n == 0) {
