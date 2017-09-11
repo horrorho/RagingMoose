@@ -26,7 +26,7 @@ The native constructor accepts [ReadableByteChannel](https://docs.oracle.com/jav
     }
 ```
 
-The InputStream constructor wraps over the native constructor using the [Channels#newChannel](https://docs.oracle.com/javase/8/docs/api/java/nio/channels/Channels.html#newChannel-java.io.InputStream-) adapter. This adapter also buffers the stream in 8192 byte size blocks.
+The InputStream constructor wraps over the native constructor using the [Channels#newChannel](https://docs.oracle.com/javase/8/docs/api/java/nio/channels/Channels.html#newChannel-java.io.InputStream-) adapter.
 
 ```Java
     public LZFSEInputStream(InputStream is) {
