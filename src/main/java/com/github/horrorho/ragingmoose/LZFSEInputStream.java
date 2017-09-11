@@ -42,7 +42,7 @@ import javax.annotation.concurrent.NotThreadSafe;
  */
 @NotThreadSafe
 @ParametersAreNonnullByDefault
-public class LZFSEDecoder extends InputStream implements LZFSEConstants {
+public class LZFSEInputStream extends InputStream implements LZFSEConstants {
 
     private final ByteBuffer word = ByteBuffer.allocate(4).order(LITTLE_ENDIAN);
     private final ReadableByteChannel ch;
@@ -67,11 +67,11 @@ public class LZFSEDecoder extends InputStream implements LZFSEConstants {
     @Nullable
     private BlockDecoder decoder;
 
-    public LZFSEDecoder(InputStream is) {
+    public LZFSEInputStream(InputStream is) {
         this(Channels.newChannel(is));
     }
 
-    public LZFSEDecoder(ReadableByteChannel ch) {
+    public LZFSEInputStream(ReadableByteChannel ch) {
         this.ch = Objects.requireNonNull(ch);
     }
 
