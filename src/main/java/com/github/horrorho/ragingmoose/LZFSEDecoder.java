@@ -25,14 +25,15 @@ package com.github.horrorho.ragingmoose;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import static java.lang.Integer.toHexString;
 import java.nio.ByteBuffer;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.util.Objects;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
-import javax.annotation.WillNotClose;
 import javax.annotation.concurrent.NotThreadSafe;
 
 /**
@@ -41,116 +42,171 @@ import javax.annotation.concurrent.NotThreadSafe;
  */
 @NotThreadSafe
 @ParametersAreNonnullByDefault
-public class LZFSEDecoder implements LZFSEConstants {
+public class LZFSEDecoder extends InputStream implements LZFSEConstants {
 
-    private final ByteBuffer mb = ByteBuffer.allocate(4).order(LITTLE_ENDIAN);
+    private final ByteBuffer word = ByteBuffer.allocate(4).order(LITTLE_ENDIAN);
+    private final ReadableByteChannel ch;
 
-    private final LZFSEBlockHeader lzfseBlockHeader;
-    private final LZVNBlockHeader lzvnBlockHeader;
-    private final RawBlockHeader rawBlockHeader;
-    private final LZFSEBlockDecoder lzfseDecoder;
-    private final LZVNBlockDecoder lzvnDecoder;
+    private boolean eos = false;
 
-    private final byte[] dBuffer;
-    private final int dBufferMask;
+    @Nullable
+    private MatchBuffer mb;
+    @Nullable
+    private LZFSEBlockHeader lzfseBlockHeader;
+    @Nullable
+    private LZVNBlockHeader lzvnBlockHeader;
+    @Nullable
+    private RawBlockHeader rawBlockHeader;
+    @Nullable
+    private LZFSEBlockDecoder lzfseBlockDecoder;
+    @Nullable
+    private LZVNBlockDecoder lzvnBlockDecoder;
+    @Nullable
+    private RawBlockDecoder rawBlockDecoder;
 
-    LZFSEDecoder(LZFSEBlockHeader lzfseBlockHeader,
-            LZVNBlockHeader lzvnBlockHeader,
-            RawBlockHeader rawBlockHeader,
-            LZFSEBlockDecoder lzfseDecoder,
-            LZVNBlockDecoder lzvnDecoder,
-            byte[] dBuffer,
-            int dBufferMask) {
-        this.lzfseBlockHeader = Objects.requireNonNull(lzfseBlockHeader);
-        this.lzvnBlockHeader = Objects.requireNonNull(lzvnBlockHeader);
-        this.rawBlockHeader = Objects.requireNonNull(rawBlockHeader);
-        this.lzfseDecoder = Objects.requireNonNull(lzfseDecoder);
-        this.lzvnDecoder = Objects.requireNonNull(lzvnDecoder);
-        this.dBuffer = Objects.requireNonNull(dBuffer);
-        this.dBufferMask = dBufferMask;
+    @Nullable
+    private BlockDecoder decoder;
+
+    public LZFSEDecoder(InputStream is) {
+        this(Channels.newChannel(is));
     }
 
-    public LZFSEDecoder() {
-        this(new LZFSEBlockHeader(),
-                new LZVNBlockHeader(),
-                new RawBlockHeader(),
-                new LZFSEBlockDecoder(),
-                new LZVNBlockDecoder(),
-                new byte[D_BUFFER_SIZE],
-                D_BUFFER_MASK);
-    }
-
-    @Nonnull
-    public LZFSEDecoder decode(@WillNotClose InputStream is, @WillNotClose OutputStream os)
-            throws IOException, LZFSEDecoderException {
-        MatchOutputStream maos = new MatchOutputStream(os, dBuffer, dBufferMask);
-        while (true) {
-            int magic = magic(is);
-            switch (magic) {
-                case COMPRESSEDV2_BLOCK_MAGIC:
-                    v2(is, maos);
-                    break;
-                case COMPRESSEDV1_BLOCK_MAGIC:
-                    v1(is, maos);
-                    break;
-                case COMPRESSEDLZVN_BLOCK_MAGIC:
-                    vn(is, maos);
-                    break;
-                case UNCOMPRESSED_BLOCK_MAGIC:
-                    raw(is, maos);
-                    break;
-                case ENDOFSTREAM_BLOCK_MAGIC:
-                    maos.flush();
-                    return this;
-                default:
-                    throw new LZFSEDecoderException("bad block: 0x" + toHexString(magic));
-            }
-        }
-    }
-
-    void v1(@WillNotClose InputStream is, @WillNotClose MatchOutputStream maos)
-            throws IOException, LZFSEDecoderException {
-        lzfseBlockHeader.loadV1(is);
-        lzfseDecoder.init(lzfseBlockHeader)
-                .apply(is, maos);
-    }
-
-    void v2(@WillNotClose InputStream is, @WillNotClose MatchOutputStream maos)
-            throws IOException, LZFSEDecoderException {
-        lzfseBlockHeader.loadV2(is);
-        lzfseDecoder.init(lzfseBlockHeader)
-                .apply(is, maos);
-    }
-
-    void vn(@WillNotClose InputStream is, @WillNotClose MatchOutputStream maos)
-            throws IOException, LZFSEDecoderException {
-        lzvnBlockHeader.load(is);
-        lzvnDecoder.apply(is, maos);
-    }
-
-    void raw(@WillNotClose InputStream is, @WillNotClose OutputStream os)
-            throws IOException, LZFSEDecoderException {
-        rawBlockHeader.load(is);
-        IO.copy(is, os, rawBlockHeader.nRawBytes());
-    }
-
-    int magic(@WillNotClose InputStream is) throws IOException {
-        mb.rewind();
-        IO.readFully(is, mb).flip();
-        return mb.getInt();
+    public LZFSEDecoder(ReadableByteChannel ch) {
+        this.ch = Objects.requireNonNull(ch);
     }
 
     @Override
-    public String toString() {
-        return "LZFSEDecoder{"
-                + "mb=" + mb
-                + ", lzfseBlockHeader=" + lzfseBlockHeader
-                + ", lzvnBlockHeader=" + lzvnBlockHeader
-                + ", rawBlockHeader=" + rawBlockHeader
-                + ", decoder=" + lzfseDecoder
-                + ", lzvnDecoder=" + lzvnDecoder
-                + ", dBuffer=" + dBuffer.length
-                + ", dBufferMask=" + dBufferMask
-                + '}';
+    public int read() throws IOException {
+        while (!eos) {
+            if (decoder == null) {
+                next();
+            } else {
+                int b = decoder.read();
+                if (b == -1) {
+                    decoder = null;
+                } else {
+                    return b;
+                }
+            }
+        }
+        return -1;
+    }
+
+    void next() throws IOException {
+        int magic = magic();
+        switch (magic) {
+            case COMPRESSEDV2_BLOCK_MAGIC:
+                v2Block();
+                break;
+            case COMPRESSEDV1_BLOCK_MAGIC:
+                v1Block();
+                break;
+            case COMPRESSEDLZVN_BLOCK_MAGIC:
+                vnBlock();
+                break;
+            case UNCOMPRESSED_BLOCK_MAGIC:
+                raw();
+                break;
+            case ENDOFSTREAM_BLOCK_MAGIC:
+                eosBlock();
+                break;
+            default:
+                throw new LZFSEDecoderException("bad block: 0x" + toHexString(magic));
+        }
+    }
+
+    void v1Block() throws IOException, LZFSEDecoderException {
+        lzfseBlockHeader()
+                .loadV1(ch);
+        decoder = lzfseBlockDecoder()
+                .init(lzfseBlockHeader, ch);
+    }
+
+    void v2Block() throws IOException, LZFSEDecoderException {
+        lzfseBlockHeader()
+                .loadV2(ch);
+        decoder = lzfseBlockDecoder()
+                .init(lzfseBlockHeader, ch);
+    }
+
+    void vnBlock() throws IOException {
+        lzvnBlockHeader()
+                .load(ch);
+        decoder = lzvnBlockDecoder()
+                .init(lzvnBlockHeader, ch);
+    }
+
+    void raw() throws IOException {
+        rawBlockHeader()
+                .load(ch);
+        decoder = rawBlockDecoder()
+                .init(rawBlockHeader, ch);
+    }
+
+    void eosBlock() {
+        eos = true;
+        decoder = null;
+    }
+
+    @Nonnull
+    LZFSEBlockHeader lzfseBlockHeader() {
+        if (lzfseBlockHeader == null) {
+            lzfseBlockHeader = new LZFSEBlockHeader();
+        }
+        return lzfseBlockHeader;
+    }
+
+    @Nonnull
+    LZFSEBlockDecoder lzfseBlockDecoder() {
+        if (lzfseBlockDecoder == null) {
+            lzfseBlockDecoder = new LZFSEBlockDecoder(matchBuffer());
+        }
+        return lzfseBlockDecoder;
+    }
+
+    @Nonnull
+    LZVNBlockHeader lzvnBlockHeader() {
+        if (lzvnBlockHeader == null) {
+            lzvnBlockHeader = new LZVNBlockHeader();
+        }
+        return lzvnBlockHeader;
+    }
+
+    @Nonnull
+    LZVNBlockDecoder lzvnBlockDecoder() {
+        if (lzvnBlockDecoder == null) {
+            lzvnBlockDecoder = new LZVNBlockDecoder(matchBuffer());
+        }
+        return lzvnBlockDecoder;
+    }
+
+    @Nonnull
+    RawBlockHeader rawBlockHeader() {
+        if (rawBlockHeader == null) {
+            rawBlockHeader = new RawBlockHeader();
+        }
+        return rawBlockHeader;
+    }
+
+    @Nonnull
+    RawBlockDecoder rawBlockDecoder() {
+        if (rawBlockDecoder == null) {
+            rawBlockDecoder = new RawBlockDecoder();
+        }
+        return rawBlockDecoder;
+    }
+
+    @Nonnull
+    MatchBuffer matchBuffer() {
+        if (mb == null) {
+            mb = new MatchBuffer(MATCH_BUFFER_SIZE);
+        }
+        return mb;
+    }
+
+    int magic() throws IOException {
+        word.rewind();
+        IO.readFully(ch, word).rewind();
+        return word.getInt();
     }
 }

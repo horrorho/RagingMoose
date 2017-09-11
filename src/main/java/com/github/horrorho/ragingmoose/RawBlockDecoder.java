@@ -23,33 +23,51 @@
  */
 package com.github.horrorho.ragingmoose;
 
-import java.io.EOFException;
 import java.io.IOException;
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import java.nio.channels.ReadableByteChannel;
-import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import javax.annotation.WillNotClose;
-import javax.annotation.concurrent.Immutable;
+import javax.annotation.concurrent.NotThreadSafe;
 
 /**
  *
  * @author Ayesha
  */
-@Immutable
+@NotThreadSafe
 @ParametersAreNonnullByDefault
-final class IO {
+class RawBlockDecoder implements BlockDecoder {
 
-    @Nonnull
-    static ByteBuffer readFully(@WillNotClose ReadableByteChannel ch, ByteBuffer bb) throws EOFException, IOException {
-        while (bb.hasRemaining()) {
-            if (ch.read(bb) == -1) {
-                throw new EOFException();
-            }
-        }
-        return bb;
+    @Nullable
+    private ByteBuffer bb;
+
+    RawBlockDecoder init(RawBlockHeader header, @WillNotClose ReadableByteChannel ch) throws IOException {
+        initBuffer(header.nRawBytes());
+        IO.readFully(ch, bb).rewind();
+        return this;
     }
 
-    private IO() {
+    @Override
+    public int read() throws IOException {
+        try {
+            return bb.hasRemaining()
+                    ? bb.get() & 0xFF
+                    : -1;
+
+        } catch (BufferUnderflowException ex) {
+            throw new LZFSEDecoderException(ex);
+        }
+    }
+
+    void initBuffer(int capacity) {
+        if (bb == null || bb.capacity() < capacity) {
+            bb = ByteBuffer.allocate(capacity).order(LITTLE_ENDIAN);
+        } else {
+            bb.limit(capacity);
+        }
+        bb.position(0);
     }
 }

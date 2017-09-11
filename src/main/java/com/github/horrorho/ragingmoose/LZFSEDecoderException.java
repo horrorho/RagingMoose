@@ -23,11 +23,13 @@
  */
 package com.github.horrorho.ragingmoose;
 
+import java.io.IOException;
+
 /**
  *
  * @author Ayesha
  */
-public class LZFSEDecoderException extends Exception {
+public class LZFSEDecoderException extends IOException {
 
     public LZFSEDecoderException() {
     }
@@ -42,9 +44,5 @@ public class LZFSEDecoderException extends Exception {
 
     public LZFSEDecoderException(Throwable cause) {
         super(cause);
-    }
-
-    public LZFSEDecoderException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
-        super(message, cause, enableSuppression, writableStackTrace);
     }
 }

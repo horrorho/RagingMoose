@@ -24,10 +24,10 @@
 package com.github.horrorho.ragingmoose;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import java.nio.channels.ReadableByteChannel;
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
 import javax.annotation.WillNotClose;
@@ -41,17 +41,7 @@ import javax.annotation.concurrent.NotThreadSafe;
 @ParametersAreNonnullByDefault
 class LZFSEBlockHeader implements LZFSEConstants {
 
-    static void checkFrequencyTable(short[] tbl, int nStates) throws LZFSEDecoderException {
-        int sum = 0;
-        for (int i = 0; i < tbl.length; i++) {
-            sum += tbl[i];
-        }
-        if (sum > nStates) {
-            throw new LZFSEDecoderException();
-        }
-    }
-
-    static void initV1FrequencyTables(ByteBuffer bb, short[]... tables) throws LZFSEDecoderException {
+    static void initV1Tables(ByteBuffer bb, short[]... tables) throws LZFSEDecoderException {
         try {
             for (int i = 0, j = 0, k = 0, n = count(tables); i < n; i++) {
                 tables[j][k] = bb.getShort();
@@ -65,7 +55,7 @@ class LZFSEBlockHeader implements LZFSEConstants {
         }
     }
 
-    static void initV2FrequencyTables(ByteBuffer bb, short[]... tables) throws LZFSEDecoderException {
+    static void initV2Tables(ByteBuffer bb, short[]... tables) throws LZFSEDecoderException {
         int accum = 0;
         int accumNBits = 0;
         for (int i = 0, j = 0, k = 0, n = count(tables); i < n; i++) {
@@ -171,9 +161,9 @@ class LZFSEBlockHeader implements LZFSEConstants {
     private int literalState3;
 
     @Nonnull
-    LZFSEBlockHeader loadV1(@WillNotClose InputStream is) throws IOException, LZFSEDecoderException {
+    LZFSEBlockHeader loadV1(@WillNotClose ReadableByteChannel ch) throws IOException, LZFSEDecoderException {
         bb.rewind().limit(V1_SIZE);
-        IO.readFully(is, bb).flip();
+        IO.readFully(ch, bb).flip();
 
         nRawBytes = bb.getInt();
         nPayloadBytes = bb.getInt();
@@ -193,16 +183,15 @@ class LZFSEBlockHeader implements LZFSEConstants {
         mState = bb.getShort();
         dState = bb.getShort();
 
-        initV1FrequencyTables(bb, lFreq, mFreq, dFreq, literalFreq);
-        checkFrequencyTables();
+        initV1Tables(bb, lFreq, mFreq, dFreq, literalFreq);
 
         return this;
     }
 
     @Nonnull
-    LZFSEBlockHeader loadV2(@WillNotClose InputStream is) throws IOException, LZFSEDecoderException {
+    LZFSEBlockHeader loadV2(@WillNotClose ReadableByteChannel in) throws IOException, LZFSEDecoderException {
         bb.rewind().limit(V2_SIZE);
-        IO.readFully(is, bb).flip();
+        IO.readFully(in, bb).flip();
 
         nRawBytes = bb.getInt();
 
@@ -233,26 +222,16 @@ class LZFSEBlockHeader implements LZFSEConstants {
         if (nCompressedPayload == 0) {
             clear(lFreq, mFreq, dFreq, literalFreq);
 
+        } else if (nCompressedPayload > bb.capacity()) {
+            throw new LZFSEDecoderException();
+
         } else {
-            try {
-                bb.rewind().limit(nCompressedPayload);
-                IO.readFully(is, bb).flip();
+            bb.rewind().limit(nCompressedPayload);
+            IO.readFully(in, bb).flip();
 
-                initV2FrequencyTables(bb, lFreq, mFreq, dFreq, literalFreq);
-                checkFrequencyTables();
-
-            } catch (IllegalArgumentException ex) {
-                throw new LZFSEDecoderException(ex);
-            }
+            initV2Tables(bb, lFreq, mFreq, dFreq, literalFreq);
         }
         return this;
-    }
-
-    void checkFrequencyTables() throws LZFSEDecoderException {
-        checkFrequencyTable(lFreq, ENCODE_L_STATES);
-        checkFrequencyTable(mFreq, ENCODE_M_STATES);
-        checkFrequencyTable(dFreq, ENCODE_D_STATES);
-        checkFrequencyTable(literalFreq, ENCODE_LITERAL_STATES);
     }
 
     @Nonnull

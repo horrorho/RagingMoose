@@ -23,33 +23,59 @@
  */
 package com.github.horrorho.ragingmoose;
 
-import java.io.EOFException;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
-import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
-import javax.annotation.WillNotClose;
-import javax.annotation.concurrent.Immutable;
+import javax.annotation.concurrent.NotThreadSafe;
 
 /**
  *
  * @author Ayesha
  */
-@Immutable
+@NotThreadSafe
 @ParametersAreNonnullByDefault
-final class IO {
+class MatchBuffer {
 
-    @Nonnull
-    static ByteBuffer readFully(@WillNotClose ReadableByteChannel ch, ByteBuffer bb) throws EOFException, IOException {
-        while (bb.hasRemaining()) {
-            if (ch.read(bb) == -1) {
-                throw new EOFException();
-            }
+    private final byte[] buf;
+    private final int mod;
+    private int p;
+
+    MatchBuffer(int size) {
+        this.mod = size - 1;
+        if ((size & (mod)) != 0) {
+            throw new IllegalArgumentException("size not a power of 2: " + size);
         }
-        return bb;
+        this.buf = new byte[size];
     }
 
-    private IO() {
+    void write(byte b) {
+        buf[p] = (byte) b;
+        p++;
+        p &= mod;
+    }
+
+    byte match(int d) {
+        if (d <= 0) {
+            throw new IllegalArgumentException();
+        }
+        byte b = buf[(p - d) & mod];
+        write(b);
+        return b;
+    }
+
+    void match(byte[] bs, int off, int d, int m) {
+        if (d <= 0) {
+            throw new IllegalArgumentException();
+        } else if (m < 0) {
+            throw new IllegalArgumentException();
+        }
+        for (int i = 0; i < m; i++) {
+            byte b = buf[(p - d) & mod];
+            bs[i + off] = b;
+            write(b);
+        }
+    }
+
+    @Override
+    public String toString() {
+        return "MatchBuffer{" + "buf.length=" + buf.length + ", mod=" + mod + ", p=" + p + '}';
     }
 }

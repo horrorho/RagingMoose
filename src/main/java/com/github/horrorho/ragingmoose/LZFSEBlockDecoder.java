@@ -24,9 +24,9 @@
 package com.github.horrorho.ragingmoose;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import java.nio.channels.ReadableByteChannel;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -39,7 +39,7 @@ import javax.annotation.concurrent.NotThreadSafe;
  */
 @NotThreadSafe
 @ParametersAreNonnullByDefault
-class LZFSEBlockDecoder implements LZFSEConstants {
+class LZFSEBlockDecoder extends LMDBlockDecoder implements LZFSEConstants {
 
     private static final byte[] L_EXTRA_BITS = {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 3, 5, 8
@@ -81,74 +81,73 @@ class LZFSEBlockDecoder implements LZFSEConstants {
     private final LiteralDecoder literalDecoder = new LiteralDecoder(ENCODE_LITERAL_STATES);
 
     private final byte[] literals = new byte[LITERALS_PER_BLOCK + 64];
+    private int pos;
 
     @Nullable
     private ByteBuffer bb;
+    @Nullable
+    private BitInStream in;
 
     private int rawBytes;
-    private int nLmdPayloadBytes;
-    private int lmdBits;
     private int symbols;
 
+    LZFSEBlockDecoder(MatchBuffer mb) {
+        super(mb);
+    }
+
     @Nonnull
-    LZFSEBlockDecoder init(LZFSEBlockHeader bh) throws LZFSEDecoderException {
+    LZFSEBlockDecoder init(LZFSEBlockHeader bh, @WillNotClose ReadableByteChannel ch) throws LZFSEDecoderException, IOException {
         lValueDecoder.load(bh.lFreq(), L_EXTRA_BITS, L_BASE_VALUE)
                 .state(bh.lState());
         mValueDecoder.load(bh.mFreq(), M_EXTRA_BITS, M_BASE_VALUE)
                 .state(bh.mState());
         dValueDecoder.load(bh.dFreq(), D_EXTRA_BITS, D_BASE_VALUE)
                 .state(bh.dState());
-
         literalDecoder.load(bh.literalFreq())
                 .state(bh.literalState0(), bh.literalState1(), bh.literalState2(), bh.literalState3())
                 .nLiteralPayloadBytes(bh.nLiteralPayloadBytes())
                 .nLiterals(bh.nLiterals())
-                .literalBits(bh.literalBits());
+                .literalBits(bh.literalBits())
+                .decodeInto(ch, literals);
+
+        initBuffer(bh.nLmdPayloadBytes());
+        IO.readFully(ch, bb);
+        in = new BitInStream(bb)
+                .init(bh.lmdBits());
 
         rawBytes = bh.nRawBytes();
-        nLmdPayloadBytes = bh.nLmdPayloadBytes();
-        lmdBits = bh.lmdBits();
         symbols = bh.nMatches();
+
+        pos = 0;
 
         return this;
     }
 
-    public int rawBytes() {
+    int rawBytes() {
         return rawBytes;
     }
 
-    @Nonnull
-    LZFSEBlockDecoder apply(@WillNotClose InputStream is, @WillNotClose MatchOutputStream maos)
-            throws IOException, LZFSEDecoderException {
-        try {
-            literalDecoder.decodeInto(is, literals);
-            int literal = 0;
+    @Override
+    byte literal() throws IOException {
+        return literals[pos++];
+    }
 
-            initBuffer();
-            IO.readFully(is, bb);
-            BitInStream in = new BitInStream(bb)
-                    .init(lmdBits);
+    @Override
+    boolean lmd() throws LZFSEDecoderException {
+        if (symbols > 0) {
+            symbols--;
+            in.fill();
+            l(lValueDecoder.decode(in));
+            m(mValueDecoder.decode(in));
+            d(dValueDecoder.decode(in));
+            return true;
 
-            int d = 0;
-            while (symbols-- > 0) {
-                in.fill();
-                int l = lValueDecoder.decode(in);
-                int m = mValueDecoder.decode(in);
-                int _d = dValueDecoder.decode(in);
-                d = _d == 0 ? d : _d;
-
-                maos.write(literals, literal, l);
-                maos.writeMatch(d, m);
-                literal += l;
-            }
-            return this;
-
-        } catch (IllegalArgumentException ex) {
-            throw new LZFSEDecoderException(ex);
+        } else {
+            return false;
         }
     }
 
-    ByteBuffer initBuffer() {
+    void initBuffer(int nLmdPayloadBytes) {
         int capacity = 32 + nLmdPayloadBytes;
         if (bb == null || bb.capacity() < capacity) {
             bb = ByteBuffer.allocate(capacity).order(LITTLE_ENDIAN);
@@ -156,7 +155,6 @@ class LZFSEBlockDecoder implements LZFSEConstants {
             bb.limit(capacity);
         }
         bb.position(32);
-        return bb;
     }
 
     @Override
@@ -166,12 +164,9 @@ class LZFSEBlockDecoder implements LZFSEConstants {
                 + ", mValueDecoder=" + mValueDecoder
                 + ", dValueDecoder=" + dValueDecoder
                 + ", literalDecoder=" + literalDecoder
-                + ", literalsOff=" + literals.length
+                + ", literals=.length" + literals.length
                 + ", bb=" + bb
-                + ", rawBytes=" + rawBytes
-                + ", nLmdPayloadBytes=" + nLmdPayloadBytes
-                + ", lmdBits=" + lmdBits
-                + ", symbols=" + symbols
+                + ", in=" + in
                 + '}';
     }
 }

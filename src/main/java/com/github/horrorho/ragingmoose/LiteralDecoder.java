@@ -24,9 +24,9 @@
 package com.github.horrorho.ragingmoose;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import java.nio.channels.ReadableByteChannel;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -96,9 +96,10 @@ class LiteralDecoder {
     }
 
     @Nonnull
-    LiteralDecoder decodeInto(@WillNotClose InputStream is, byte[] literals) throws IOException, LZFSEDecoderException {
+    LiteralDecoder decodeInto(@WillNotClose ReadableByteChannel ch, byte[] literals)
+            throws IOException, LZFSEDecoderException {
         initBuffer();
-        IO.readFully(is, bb);
+        IO.readFully(ch, bb);
         BitInStream in = new BitInStream(bb)
                 .init(literalBits);
 
@@ -112,7 +113,8 @@ class LiteralDecoder {
         return this;
     }
 
-    ByteBuffer initBuffer() {
+    @Nonnull
+    void initBuffer() {
         int capacity = 8 + nLiteralPayloadBytes;
         if (bb == null || bb.capacity() < capacity) {
             bb = ByteBuffer.allocate(capacity).order(LITTLE_ENDIAN);
@@ -120,7 +122,6 @@ class LiteralDecoder {
             bb.limit(capacity);
         }
         bb.position(8);
-        return bb;
     }
 
     @Override

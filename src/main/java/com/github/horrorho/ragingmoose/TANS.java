@@ -34,6 +34,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import javax.annotation.concurrent.NotThreadSafe;
 
 /**
+ * tANS - asymmetric numeral systems tabled variant
  *
  * @author Ayesha
  * @param <T>
@@ -93,6 +94,7 @@ final class TANS<T extends TANS.Entry> {
         }
     }
 
+    @Nonnull
     static <T> T[] table(int n, Supplier<T> cons, IntFunction<T[]> generator) {
         return Stream.generate(cons)
                 .limit(n)

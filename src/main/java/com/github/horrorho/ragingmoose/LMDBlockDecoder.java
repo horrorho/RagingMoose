@@ -23,12 +23,9 @@
  */
 package com.github.horrorho.ragingmoose;
 
-import java.io.FilterOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.Objects;
 import javax.annotation.ParametersAreNonnullByDefault;
-import javax.annotation.WillNotClose;
 import javax.annotation.concurrent.NotThreadSafe;
 
 /**
@@ -37,57 +34,58 @@ import javax.annotation.concurrent.NotThreadSafe;
  */
 @NotThreadSafe
 @ParametersAreNonnullByDefault
-class MatchOutputStream extends FilterOutputStream {
+abstract class LMDBlockDecoder implements BlockDecoder {
 
-    private final OutputStream os;
-    private final byte[] bs;
-    private long n;
-    private int p;
-    private int mask;
+    private final MatchBuffer mb;
 
-    MatchOutputStream(@WillNotClose OutputStream os, byte[] bs, int mask, long n, int p) {
-        super(os);
-        if (mask != bs.length - 1) {
-            throw new IllegalArgumentException();
-        }
-        this.os = Objects.requireNonNull(os);
-        this.bs = Objects.requireNonNull(bs);
-        this.mask = mask;
-        this.n = n;
-        this.p = p;
+    LMDBlockDecoder(MatchBuffer mb) {
+        this.mb = Objects.requireNonNull(mb);
     }
 
-    MatchOutputStream(@WillNotClose OutputStream os, byte[] bs, int mask) {
-        this(os, bs, mask, 0, 0);
-    }
+    int l;
+    int m;
+    int d;
 
     @Override
-    public void write(int b) throws IOException {
-        os.write(b);
-        bs[p++] = (byte) b;
-        p &= mask;
-        n++;
-    }
+    public int read() throws IOException {
+        try {
+            do {
+                // Literal
+                if (l > 0) {
+                    l--;
+                    byte b = literal();
+                    mb.write(b);
+                    return b & 0xFF;
+                }
+                // Match
+                if (m > 0) {
+                    m--;
+                    return mb.match(d) & 0xFF;
+                }
+            } while (lmd());
 
-    void writeMatch(int d, int m) throws IOException {
-        if (d <= 0) {
-            throw new IllegalArgumentException();
-        } else if (m < 0) {
-            throw new IllegalArgumentException();
-        } else if (d > n) {
-            throw new IndexOutOfBoundsException();
+            return -1;
+
+        } catch (IllegalArgumentException ex) {
+            throw new LZFSEDecoderException(ex);
         }
-        for (int i = 0; i < m; i++) {
-            write(bs[(p - d) & mask]);
+    }
+
+    abstract byte literal() throws IOException;
+
+    abstract boolean lmd() throws IOException;
+
+    void l(int l) {
+        this.l = l;
+    }
+
+    void m(int m) {
+        this.m = m;
+    }
+
+    void d(int d) {
+        if (d != 0) {
+            this.d = d;
         }
-    }
-
-    long count() {
-        return n;
-    }
-
-    @Override
-    public void close() throws IOException {
-        flush();
     }
 }

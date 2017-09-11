@@ -37,7 +37,6 @@ interface LZFSEConstants {
     static final int ENCODE_GOOD_MATCH = 40;
     static final int ENCODE_LZVN_THRESHOLD = 4096;
 
-    static final int NO_BLOCK_MAGIC = 0x00000000;
     static final int ENDOFSTREAM_BLOCK_MAGIC = 0x24787662;
     static final int UNCOMPRESSED_BLOCK_MAGIC = 0x2d787662;
     static final int COMPRESSEDV1_BLOCK_MAGIC = 0x31787662;
@@ -64,6 +63,5 @@ interface LZFSEConstants {
     static final int ENCODE_MAX_M_VALUE = 2359;
     static final int ENCODE_MAX_D_VALUE = 262139;
 
-    static final int D_BUFFER_SIZE = 262144;
-    static final int D_BUFFER_MASK = 0x0003FFFF;
+    static final int MATCH_BUFFER_SIZE = 262144;
 }

@@ -23,33 +23,13 @@
  */
 package com.github.horrorho.ragingmoose;
 
-import java.io.EOFException;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
-import javax.annotation.Nonnull;
-import javax.annotation.ParametersAreNonnullByDefault;
-import javax.annotation.WillNotClose;
-import javax.annotation.concurrent.Immutable;
 
 /**
  *
  * @author Ayesha
  */
-@Immutable
-@ParametersAreNonnullByDefault
-final class IO {
+interface BlockDecoder {
 
-    @Nonnull
-    static ByteBuffer readFully(@WillNotClose ReadableByteChannel ch, ByteBuffer bb) throws EOFException, IOException {
-        while (bb.hasRemaining()) {
-            if (ch.read(bb) == -1) {
-                throw new EOFException();
-            }
-        }
-        return bb;
-    }
-
-    private IO() {
-    }
+    int read() throws IOException;
 }

@@ -24,8 +24,10 @@
 package com.github.horrorho.ragingmoose;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.Objects;
+import java.nio.BufferUnderflowException;
+import java.nio.ByteBuffer;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import java.nio.channels.ReadableByteChannel;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import javax.annotation.WillNotClose;
@@ -37,11 +39,11 @@ import javax.annotation.concurrent.NotThreadSafe;
  */
 @NotThreadSafe
 @ParametersAreNonnullByDefault
-final class LZVNBlockDecoder {
+final class LZVNBlockDecoder extends LMDBlockDecoder {
 
     private interface Op {
 
-        boolean call(int opc) throws LZFSEDecoderException, IOException;
+        boolean call(int opc) throws LZFSEDecoderException;
     }
 
     private final Op[] tbl = new Op[]{
@@ -79,127 +81,107 @@ final class LZVNBlockDecoder {
         this::smlM, this::smlM, this::smlM, this::smlM, this::smlM, this::smlM, this::smlM, this::smlM};
 
     @Nullable
-    private InputStream is;
-    @Nullable
-    private MatchOutputStream maos;
+    private ByteBuffer bb;
 
-    private int dPrev;
-
-    LZVNBlockDecoder apply(@WillNotClose InputStream is, @WillNotClose MatchOutputStream maos)
-            throws LZFSEDecoderException, IOException {
-        return is(is).os(maos).decode();
+    LZVNBlockDecoder(MatchBuffer mb) {
+        super(mb);
     }
 
-    LZVNBlockDecoder is(@WillNotClose InputStream is) {
-        this.is = Objects.requireNonNull(is);
+    LZVNBlockDecoder init(LZVNBlockHeader header, @WillNotClose ReadableByteChannel ch) throws IOException {
+        initBuffer(header.nPayloadBytes());
+        IO.readFully(ch, bb).rewind();
+
+        l = 0;
+        m = 0;
+        d = -1;
+
         return this;
     }
 
-    LZVNBlockDecoder os(@WillNotClose MatchOutputStream maos) {
-        this.maos = Objects.requireNonNull(maos);
-        return this;
-    }
-
-    LZVNBlockDecoder decode() throws LZFSEDecoderException, IOException {
-        boolean more;
-        do {
-            int opc = loadByte();
-            more = tbl[opc].call(opc);
-        } while (more);
-        return this;
-    }
-
-    int loadByte() throws IOException {
-        return is.read();
-    }
-
-    int loadShort() throws IOException {
-        return is.read() + (is.read() << 8);
-    }
-
-    boolean copyLiteralMatch(int l, int m) throws LZFSEDecoderException, IOException {
-        return copyLiteral(l) && copyMatch(m);
-    }
-
-    boolean copyLiteralMatch(int l, int m, int d) throws LZFSEDecoderException, IOException {
-        return copyLiteral(l) && copyMatch(m, d);
-    }
-
-    boolean copyLiteral(int l) throws IOException {
-        for (int i = 0; i < l; i++) {
-            maos.write(is.read());
+    void initBuffer(int capacity) {
+        if (bb == null || bb.capacity() < capacity) {
+            bb = ByteBuffer.allocate(capacity).order(LITTLE_ENDIAN);
+        } else {
+            bb.limit(capacity);
         }
-        return true;
+        bb.position(0);
     }
 
-    boolean copyMatch(int m) throws LZFSEDecoderException, IOException {
-        return copyMatch(m, dPrev);
-    }
-
-    boolean copyMatch(int m, int d) throws LZFSEDecoderException, IOException {
-        dPrev = d;
+    @Override
+    boolean lmd() throws IOException, LZFSEDecoderException {
         try {
-            maos.writeMatch(d, m);
-        } catch (IllegalArgumentException | IndexOutOfBoundsException ex) {
+            int opc = bb.get() & 0xFF;
+            return tbl[opc].call(opc);
+
+        } catch (BufferUnderflowException ex) {
             throw new LZFSEDecoderException(ex);
         }
+    }
+
+    @Override
+    byte literal() throws IOException {
+        try {
+            return bb.get();
+
+        } catch (BufferUnderflowException ex) {
+            throw new LZFSEDecoderException(ex);
+        }
+    }
+
+    boolean smlL(int opc) {
+        // 1110LLLL LITERAL
+        l(opc & 0x0F);
         return true;
     }
 
-    boolean smlL(int opc) throws IOException {
-        // 1110LLLL LITERAL
-        int l = opc & 0x0F;
-        return copyLiteral(l);
-    }
-
-    boolean lrgL(int opc) throws IOException {
+    boolean lrgL(int opc) {
         // 11100000 LLLLLLLL LITERAL
-        int l = loadByte() + 16;
-        return copyLiteral(l);
+        l((bb.get() & 0xFF) + 16);
+        return true;
     }
 
-    boolean smlM(int opc) throws LZFSEDecoderException, IOException {
+    boolean smlM(int opc) {
         // 1111MMMM
-        int m = opc & 0xF;
-        return copyMatch(m);
+        m(opc & 0xF);
+        return true;
     }
 
-    boolean lrgM(int opc) throws LZFSEDecoderException, IOException {
+    boolean lrgM(int opc) {
         // 11110000 MMMMMMMM
-        int m = loadByte() + 16;
-        return copyMatch(m);
+        m((bb.get() & 0xFF) + 16);
+        return true;
     }
 
-    boolean preD(int opc) throws LZFSEDecoderException, IOException {
+    boolean preD(int opc) {
         // LLMMM110
-        int l = opc >>> 6 & 0x03;
-        int m = (opc >>> 3 & 0x07) + 3;
-        return copyLiteralMatch(l, m);
+        l(opc >>> 6 & 0x03);
+        m((opc >>> 3 & 0x07) + 3);
+        return true;
     }
 
-    boolean smlD(int opc) throws LZFSEDecoderException, IOException {
+    boolean smlD(int opc) {
         // LLMMMDDD DDDDDDDD LITERAL
-        int l = opc >>> 6 & 0x03;
-        int m = (opc >>> 3 & 0x07) + 3;
-        int d = (opc & 0x07) << 8 | loadByte();
-        return copyLiteralMatch(l, m, d);
+        l(opc >>> 6 & 0x03);
+        m((opc >>> 3 & 0x07) + 3);
+        d((opc & 0x07) << 8 | (bb.get() & 0xFF));
+        return true;
     }
 
-    boolean medD(int opc) throws LZFSEDecoderException, IOException {
+    boolean medD(int opc) {
         // 101LLMMM DDDDDDMM DDDDDDDD LITERAL
-        int s = loadShort();
-        int l = opc >>> 3 & 0x03;
-        int m = ((opc & 0x7) << 2 | (s & 0x03)) + 3;
-        int d = s >>> 2;
-        return copyLiteralMatch(l, m, d);
+        int s = bb.getShort();
+        l(opc >>> 3 & 0x03);
+        m(((opc & 0x7) << 2 | (s & 0x03)) + 3);
+        d(s >>> 2);
+        return true;
     }
 
-    boolean lrgD(int opc) throws LZFSEDecoderException, IOException {
-        // LLMMM111 DDDDDDDD DDDDDDDD LITERAL        
-        int l = opc >>> 6 & 0x03;
-        int m = (opc >>> 3 & 0x07) + 3;
-        int d = loadShort();
-        return copyLiteralMatch(l, m, d);
+    boolean lrgD(int opc) {
+        // LLMMM111 DDDDDDDD DDDDDDDD LITERAL 
+        l(opc >>> 6 & 0x03);
+        m((opc >>> 3 & 0x07) + 3);
+        d(bb.getShort() & 0xFFFF);
+        return true;
     }
 
     boolean eos(int opc) {
@@ -212,14 +194,5 @@ final class LZVNBlockDecoder {
 
     boolean udef(int opc) throws LZFSEDecoderException {
         throw new LZFSEDecoderException();
-    }
-
-    @Override
-    public String toString() {
-        return "LZVNBlockDecoder{"
-                + "is=" + is
-                + ", maos=" + maos
-                + ", dPrev=" + dPrev
-                + '}';
     }
 }

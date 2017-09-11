@@ -24,9 +24,9 @@
 package com.github.horrorho.ragingmoose;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import java.nio.channels.ReadableByteChannel;
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
 import javax.annotation.WillNotClose;
@@ -46,13 +46,13 @@ class LZVNBlockHeader {
     private int nPayloadBytes;
 
     @Nonnull
-    LZVNBlockHeader load(@WillNotClose InputStream is) throws IOException, LZFSEDecoderException {
+    LZVNBlockHeader load(@WillNotClose ReadableByteChannel ch) throws IOException {
         bb.rewind();
-        IO.readFully(is, bb).flip();
-        
+        IO.readFully(ch, bb).flip();
+
         nRawBytes = bb.getInt();
         nPayloadBytes = bb.getInt();
-        
+
         return this;
     }
 
