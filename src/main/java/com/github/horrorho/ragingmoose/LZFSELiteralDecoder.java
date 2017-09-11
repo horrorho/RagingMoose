@@ -39,7 +39,7 @@ import javax.annotation.concurrent.NotThreadSafe;
  */
 @NotThreadSafe
 @ParametersAreNonnullByDefault
-class LiteralDecoder {
+class LZFSELiteralDecoder {
 
     private final TANS<TANS.Entry> tans;
     private final TANS.State state0;
@@ -54,7 +54,7 @@ class LiteralDecoder {
     private int nLiterals;
     private int literalBits;
 
-    LiteralDecoder(int nStates) {
+    LZFSELiteralDecoder(int nStates) {
         this.tans = new TANS<>(nStates, TANS.Entry::new, TANS.Entry[]::new);
         this.state0 = new TANS.State();
         this.state1 = new TANS.State();
@@ -63,13 +63,13 @@ class LiteralDecoder {
     }
 
     @Nonnull
-    LiteralDecoder load(short[] weights) throws LZFSEDecoderException {
+    LZFSELiteralDecoder load(short[] weights) throws LZFSEDecoderException {
         tans.init(weights);
         return this;
     }
 
     @Nonnull
-    LiteralDecoder state(int state0, int state1, int state2, int state3) {
+    LZFSELiteralDecoder state(int state0, int state1, int state2, int state3) {
         this.state0.value(state0);
         this.state1.value(state1);
         this.state2.value(state2);
@@ -78,25 +78,25 @@ class LiteralDecoder {
     }
 
     @Nonnull
-    LiteralDecoder nLiteralPayloadBytes(int nLiteralPayloadBytes) {
+    LZFSELiteralDecoder nLiteralPayloadBytes(int nLiteralPayloadBytes) {
         this.nLiteralPayloadBytes = nLiteralPayloadBytes;
         return this;
     }
 
     @Nonnull
-    LiteralDecoder nLiterals(int nLiterals) {
+    LZFSELiteralDecoder nLiterals(int nLiterals) {
         this.nLiterals = nLiterals;
         return this;
     }
 
     @Nonnull
-    LiteralDecoder literalBits(int literalBits) {
+    LZFSELiteralDecoder literalBits(int literalBits) {
         this.literalBits = literalBits;
         return this;
     }
 
     @Nonnull
-    LiteralDecoder decodeInto(@WillNotClose ReadableByteChannel ch, byte[] literals)
+    LZFSELiteralDecoder decodeInto(@WillNotClose ReadableByteChannel ch, byte[] literals)
             throws IOException, LZFSEDecoderException {
         initBuffer();
         IO.readFully(ch, bb);
@@ -126,7 +126,7 @@ class LiteralDecoder {
 
     @Override
     public String toString() {
-        return "LiteralDecoder{"
+        return "LZFSELiteralDecoder{"
                 + "tans=" + tans
                 + ", state0=" + state0
                 + ", state1=" + state1

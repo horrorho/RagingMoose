@@ -33,7 +33,7 @@ import javax.annotation.concurrent.NotThreadSafe;
  */
 @NotThreadSafe
 @ParametersAreNonnullByDefault
-class ValueDecoder {
+class LZFSEValueDecoder {
 
     @NotThreadSafe
     static class Entry extends TANS.Entry {
@@ -53,20 +53,20 @@ class ValueDecoder {
     private final TANS<Entry> tans;
     private final TANS.State state;
 
-    ValueDecoder(int nStates) {
+    LZFSEValueDecoder(int nStates) {
         this.tans = new TANS<>(nStates, Entry::new, Entry[]::new);
         this.state = new TANS.State();
     }
 
     @Nonnull
-    ValueDecoder load(short[] weights, byte[] symbolVBits, int[] symbolVBase) throws LZFSEDecoderException {
+    LZFSEValueDecoder load(short[] weights, byte[] symbolVBits, int[] symbolVBase) throws LZFSEDecoderException {
         tans.init(weights)
                 .foreach((u, v) -> v.set(symbolVBits, symbolVBase));
         return this;
     }
 
     @Nonnull
-    ValueDecoder state(int state) {
+    LZFSEValueDecoder state(int state) {
         this.state.value(state);
         return this;
     }
@@ -78,6 +78,6 @@ class ValueDecoder {
 
     @Override
     public String toString() {
-        return "ValueDecoder{" + "tans=" + tans + ", state=" + state + '}';
+        return "LZFSEValueDecoder{" + "tans=" + tans + ", state=" + state + '}';
     }
 }
