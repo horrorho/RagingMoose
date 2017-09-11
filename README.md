@@ -16,22 +16,42 @@ I would **strongly** suggest using the reference [LZFSE](https://github.com/lzfs
 
 ## How do I use it?
 
-```
-//  in = LZFSE compressed input
-// out = decompressed output
-```
+Create an instance of [LZFSEInputStream](https://github.com/horrorho/RagingMoose/blob/master/src/main/java/com/github/horrorho/ragingmoose/LZFSEInputStream.java) and consume/ close as an [InputStream](https://docs.oracle.com/javase/8/docs/api/java/io/InputStream.html).
+
+The native constructor accepts [ReadableByteChannel](https://docs.oracle.com/javase/8/docs/api/java/nio/channels/ReadableByteChannel.html)s.
 
 ```Java
-    static void decode(Path in, Path out) {
-        try (InputStream is = new BufferedInputStream(Files.newInputStream(in));
-                OutputStream os = new BufferedOutputStream(Files.newOutputStream(out))) {
-            new LZFSEDecoder().decode(is, os);
+    public LZFSEInputStream(ReadableByteChannel ch) {
+        ...
+    }
+```
 
-        } catch (IOException ex) {
-            System.out.println("IO error: " + ex.getMessage());
-        } catch (LZFSEDecoderException ex) {
-            System.out.println("Decoder error: " + ex.getMessage());
+The InputStream constructor wraps over the native constructor using the [Channels#newChannel](https://docs.oracle.com/javase/8/docs/api/java/nio/channels/Channels.html#newChannel-java.io.InputStream-) adapter. This adapter also buffers the stream in 8192 byte size blocks.
+
+```Java
+    public LZFSEInputStream(InputStream is) {
+        this(Channels.newChannel(is));
+    }
+```
+
+A simple example that decompresses and prints the contents of an LZFSE compressed text archive. [LZFSEDecoderException](https://github.com/horrorho/RagingMoose/blob/master/src/main/java/com/github/horrorho/ragingmoose/LZFSEDecoderException.java)s signify errors in the underlying data format.
+
+```Java
+    Path path = Paths.get("mytext.lzfse"); // your LZFSE compressed text file here
+    
+    try (LZFSEInputStream is = new LZFSEInputStream(Files.newByteChannel(path));
+            ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+        int b;
+        while ((b = is.read()) != -1) {
+            baos.write(b);
         }
+        System.out.println(baos.toString("UTF-8"));
+
+    } catch (LZFSEDecoderException ex) {
+        System.err.println("Bad LZFSE archive: " + path);
+
+    } catch (IOException ex) {
+        System.err.println("IOException: " + ex.toString());
     }
 ```
 
@@ -43,7 +63,6 @@ I'm not quite sure... It seemed like a good idea at the time.
 
 ## TODO
 - Unit tests
-- InputStream wrapper
 
 
 ## Links
@@ -51,4 +70,4 @@ I'm not quite sure... It seemed like a good idea at the time.
 
 [Asymmetric_Numeral_Systems](https://en.wikipedia.org/wiki/Asymmetric_Numeral_Systems) - bed time reading.
 
-[Finite State Entropy - A new breed of entropy coder](http://fastcompression.blogspot.co.uk/2013/12/finite-state-entropy-new-breed-of.html) - wonderful series of articles on Finite State Entropy.
+[Finite State Entropy - A new breed of entropy coder](http://fastcompression.blogspot.co.uk/2013/12/finite-state-entropy-new-breed-of.html) - wonderful series of articles.
