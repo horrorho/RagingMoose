@@ -141,15 +141,15 @@ final class TANS<T extends TANS.Entry> {
     int fill(byte s, int w, int t) {
         int k = Integer.numberOfLeadingZeros(w) - nZero;
         int x = (table.length << 1 >>> k) - w;
-        for (int j = 0; j < w; j++) {
+        for (int i = 0; i < w; i++) {
             T e = table[t++];
             e.symbol(s);
-            if (j < x) {
+            if (i < x) {
                 e.nBits(k);
-                e.nBase((w + j << k) - table.length);
+                e.nBase((w + i << k) - table.length);
             } else {
                 e.nBits(k - 1);
-                e.nBase(j - x << k - 1);
+                e.nBase(i - x << k - 1);
             }
         }
         return t;

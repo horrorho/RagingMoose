@@ -76,6 +76,11 @@ public class LZFSEInputStream extends InputStream implements LZFSEConstants {
     }
 
     @Override
+    public int available() {
+        return eos ? 0 : 1;
+    }
+
+    @Override
     public int read() throws IOException {
         while (!eos) {
             if (decoder == null) {
