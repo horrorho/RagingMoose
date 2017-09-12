@@ -93,4 +93,4 @@ I'm not quite sure... It seemed like a good idea at the time.
 
 [Finite State Entropy - A new breed of entropy coder](http://fastcompression.blogspot.co.uk/2013/12/finite-state-entropy-new-breed-of.html) - wonderful series of articles.
 
-[Compression test file generator](https://encode.ru/threads/1306-Compression-test-file-generator) - Interesting thread post by [Matt Mahoney](http://mattmahoney.net/) author of `tcgen`. I've warped some of the examples into unit tests.
+[Compression test file generator](https://encode.ru/threads/1306-Compression-test-file-generator) - interesting thread post by [Matt Mahoney](http://mattmahoney.net/) author of `tcgen`. I've warped some of the examples into unit tests.
