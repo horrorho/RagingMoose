@@ -67,8 +67,6 @@ public class LZFSEInputStreamTest {
     @Nullable
     private static final String TCGEN = firstInPath("tcgen", "tcgen.exe").orElse(null);
 
-    private static boolean TOOLS = LZFSE != null && TCGEN != null;
-
     private final byte[] buffer = new byte[16384];
 
     public LZFSEInputStreamTest() {
@@ -114,7 +112,9 @@ public class LZFSEInputStreamTest {
     @Test
     @Parameters(method = "tcgen")
     public void tcgenTest(String arg) throws IOException {
-        assumeTrue(TOOLS);
+        assumeTrue("lzfse", LZFSE != null);
+        assumeTrue("tcgen", TCGEN != null);
+
         ProcessBuilder tcgen = new ProcessBuilder(TCGEN, "-", arg);
         ProcessBuilder encode = new ProcessBuilder(LZFSE, "-encode");
 
@@ -149,7 +149,9 @@ public class LZFSEInputStreamTest {
     @Test
     @Parameters(method = "tcgen")
     public void tcgenTestExt(String arg) throws IOException {
-        assumeTrue(TOOLS);
+        assumeTrue("lzfse", LZFSE != null);
+        assumeTrue("tcgen", TCGEN != null);
+
         ProcessBuilder tcgen = new ProcessBuilder(TCGEN, "-", arg);
         ProcessBuilder encode = new ProcessBuilder(LZFSE, "-encode");
         ProcessBuilder decode = new ProcessBuilder(LZFSE, "-decode");
