@@ -8,7 +8,7 @@ An experimental Java [LZFSE](https://github.com/lzfse/lzfse) capable decompresso
 
 I've opted for simplicity and there's little in the way of optimisation. It's presumed that compression will not be supported.
 
-At present the code base is essentially complete. Unit tests are in place with support for extended tests using [tcgen](http://mattmahoney.net/dc/tcgen100.zip) and an external reference [lzfse](https://github.com/lzfse/lzfse) binary (see below). Tests on malformed input data are still required.
+At present the code base is essentially complete. Unit tests are in place with support for extended tests using [tcgen](https://gist.github.com/horrorho/7837e9b83f2aa42d2781374c99fd0ba3) and an external reference [lzfse](https://github.com/lzfse/lzfse) binary (see below). Tests on malformed input data are still required.
 
 ## Should I use it?
 
