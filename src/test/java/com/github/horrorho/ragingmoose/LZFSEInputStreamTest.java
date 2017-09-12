@@ -110,7 +110,7 @@ public class LZFSEInputStreamTest {
      * @param arg
      * @throws IOException
      */
-//    @Ignore
+    @Ignore
     @Test
     @Parameters(method = "tcgen")
     public void tcgenTest(String arg) throws IOException {
