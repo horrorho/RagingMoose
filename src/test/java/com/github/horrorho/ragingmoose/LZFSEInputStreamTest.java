@@ -128,7 +128,7 @@ public class LZFSEInputStreamTest {
         // Test data into LZFSE external compressor into RagingMoose decompressor.
         for (int len : LENGTHS) {
             byte[] head = Arrays.copyOf(bs, len);
-
+            
             baos.reset();
             try (InputStream is = new LZFSEInputStream(newPipedInputStream(encode, new ByteArrayInputStream(head)))) {
                 copy(is, baos, buffer);

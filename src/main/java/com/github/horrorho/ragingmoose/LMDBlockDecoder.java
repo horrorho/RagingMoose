@@ -71,6 +71,35 @@ abstract class LMDBlockDecoder implements BlockDecoder {
         }
     }
 
+    @Override
+    public int read(byte[] b, int off, int len) throws IOException {
+        try {
+            int to = off + len;
+            int o = off;
+            do {
+                // Literals
+                int ls = Math.min(to - o, l);
+                for (int n = o + ls; o < n; o++) {
+                    byte _b = literal();
+                    mb.write(_b);
+                    b[o] = _b;
+                }
+                l -= ls;
+                // Matches
+                int ms = Math.min(to - o, m);
+                for (int n = o + ms; o < n; o++) {
+                    b[o] = mb.match(d);
+                }
+                m -= ms;
+            } while (to - o > 0 && lmd());
+
+            return o - off;
+
+        } catch (IllegalArgumentException ex) {
+            throw new LZFSEDecoderException(ex);
+        }
+    }
+
     abstract byte literal() throws IOException;
 
     abstract boolean lmd() throws IOException;

@@ -32,4 +32,6 @@ import java.io.IOException;
 interface BlockDecoder {
 
     int read() throws IOException;
+
+    int read(byte b[], int off, int len) throws IOException;
 }

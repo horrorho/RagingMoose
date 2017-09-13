@@ -97,6 +97,28 @@ public class LZFSEInputStream extends InputStream implements LZFSEConstants {
         return -1;
     }
 
+    @Override
+    public int read(byte b[], int off, int len) throws IOException {
+        if (off < 0 || len < 0 || len + off > b.length) {
+            throw new IndexOutOfBoundsException();
+        }
+        if (len == 0) {
+            return 0;
+        }
+        while (!eos) {
+            if (decoder == null) {
+                next();
+            } else {
+                int n = decoder.read(b, off, len);
+                if (n == 0) {
+                    decoder = null;
+                }
+                return n;
+            }
+        }
+        return -1;
+    }
+
     void next() throws IOException {
         int magic = magic();
         switch (magic) {

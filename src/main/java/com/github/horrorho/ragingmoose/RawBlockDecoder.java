@@ -62,6 +62,13 @@ class RawBlockDecoder implements BlockDecoder {
         }
     }
 
+    @Override
+    public int read(byte[] b, int off, int len) throws IOException {
+        int available = Math.min(bb.remaining(), len);
+        bb.get(b, off, available);
+        return available;
+    }
+
     void initBuffer(int capacity) {
         if (bb == null || bb.capacity() < capacity) {
             bb = ByteBuffer.allocate(capacity).order(LITTLE_ENDIAN);

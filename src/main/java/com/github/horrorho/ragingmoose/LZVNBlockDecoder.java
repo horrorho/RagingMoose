@@ -82,6 +82,7 @@ final class LZVNBlockDecoder extends LMDBlockDecoder {
 
     @Nullable
     private ByteBuffer bb;
+    private boolean neos = true;
 
     LZVNBlockDecoder(MatchBuffer mb) {
         super(mb);
@@ -109,13 +110,16 @@ final class LZVNBlockDecoder extends LMDBlockDecoder {
 
     @Override
     boolean lmd() throws IOException, LZFSEDecoderException {
-        try {
-            int opc = bb.get() & 0xFF;
-            return tbl[opc].call(opc);
+        if (neos) {
+            try {
+                int opc = bb.get() & 0xFF;
+                neos = tbl[opc].call(opc);
 
-        } catch (BufferUnderflowException ex) {
-            throw new LZFSEDecoderException(ex);
+            } catch (BufferUnderflowException ex) {
+                throw new LZFSEDecoderException(ex);
+            }
         }
+        return neos;
     }
 
     @Override
