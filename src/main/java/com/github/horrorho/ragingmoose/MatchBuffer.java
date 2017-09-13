@@ -53,25 +53,9 @@ class MatchBuffer {
     }
 
     byte match(int d) {
-        if (d <= 0) {
-            throw new IllegalArgumentException();
-        }
         byte b = buf[(p - d) & mod];
         write(b);
         return b;
-    }
-
-    void match(byte[] bs, int off, int d, int m) {
-        if (d <= 0) {
-            throw new IllegalArgumentException();
-        } else if (m < 0) {
-            throw new IllegalArgumentException();
-        }
-        for (int i = 0; i < m; i++) {
-            byte b = buf[(p - d) & mod];
-            bs[i + off] = b;
-            write(b);
-        }
     }
 
     @Override
