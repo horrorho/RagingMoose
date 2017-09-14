@@ -69,7 +69,7 @@ class BitInStream {
                 accum = in.getLong(in.position());
                 accumNBits = n + 64;
             }
-            check();
+//            check();
             return this;
 
         } catch (IllegalArgumentException ex) {
@@ -90,7 +90,7 @@ class BitInStream {
                 accum >>>= mBits;
                 accumNBits += nBytes << 3;
             }
-            check();
+//            check();
             return this;
 
         } catch (IllegalArgumentException ex) {
