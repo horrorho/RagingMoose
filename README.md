@@ -97,7 +97,7 @@ Tests run: 32, Failures: 0, Errors: 0, Skipped: 1
 [LZFSEInputStreamTest#tcgenTestExt](https://github.com/horrorho/RagingMoose/blob/master/src/test/java/com/github/horrorho/ragingmoose/LZFSEInputStreamTest.java#L143) is by default set to `@Ignore`. It's essentially a sanity test and bypasses RagingMoose entirely and compresses/ decompresses using [lzfse](https://github.com/lzfse/lzfse). It's not suitable as a benchmark as the chokepoint is in [tcgen](https://gist.github.com/horrorho/7837e9b83f2aa42d2781374c99fd0ba3) test data generation.
 
 ## Benchmarks
-[JMH](http://openjdk.java.net/projects/code-tools/jmh/) benchmarks. The core benchmarking code is [here](https://gist.github.com/horrorho/56eb417ac415c3aa0893849713d54750). Tests are conducted on in-memory byte data. Use the figures as a rough guide only as your use case/ environment may differ significantly.
+Decompression benchmarks using [JMH](http://openjdk.java.net/projects/code-tools/jmh/). The core benchmarking code is [here](https://gist.github.com/horrorho/56eb417ac415c3aa0893849713d54750). Tests are conducted on in-memory byte data. Use the figures as a rough guide only as your use case/ environment may differ significantly.
 
 - J.R.R.Tolkien, The Hobbit. Chapter 1. 47,257 bytes (18,905 bytes compressed):
 
