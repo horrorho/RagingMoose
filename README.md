@@ -56,7 +56,7 @@ The InputStream constructor wraps over the native constructor using the [Channel
 A simple example that decompresses and prints the contents of an LZFSE compressed text archive. [LZFSEDecoderException](https://github.com/horrorho/RagingMoose/blob/master/src/main/java/com/github/horrorho/ragingmoose/LZFSEDecoderException.java)s signify errors in the underlying data format.
 
 ```Java
-    Path path = Paths.get("my.lzfse.compressed.file"); // your LZFSE compressed text file here
+    Path path = Paths.get("my.lzfse.compressed.text.file"); // your LZFSE compressed text file here
     
     try (LZFSEInputStream is = new LZFSEInputStream(Files.newByteChannel(path));
             ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
