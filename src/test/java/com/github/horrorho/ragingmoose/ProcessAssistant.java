@@ -167,7 +167,7 @@ public class ProcessAssistant {
     public static ProcessInputStream newPipedInputStream(ProcessBuilder pb, @WillNotClose InputStream is) throws IOException {
         Process p = pb.start();
         ProcessInputStream pis = new ProcessInputStream(p);
-        new Thread(() -> ProcessInputStream.pipe(is, p.getOutputStream(), new byte[8192], pis::error))
+        new Thread(() -> ProcessInputStream.pipe(is, p.getOutputStream(), new byte[16384], pis::error))
                 .start();
         return pis;
     }
