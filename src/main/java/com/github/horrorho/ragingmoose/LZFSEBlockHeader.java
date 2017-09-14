@@ -165,12 +165,12 @@ class LZFSEBlockHeader implements LZFSEConstants {
         bb.rewind().limit(V1_SIZE);
         IO.readFully(ch, bb).flip();
 
-        nRawBytes = bb.getInt();
-        nPayloadBytes = bb.getInt();
-        nLiterals = bb.getInt();
-        nMatches = bb.getInt();
-        nLiteralPayloadBytes = bb.getInt();
-        nLmdPayloadBytes = bb.getInt();
+        nRawBytes(bb.getInt());
+        nPayloadBytes(bb.getInt());
+        nLiterals(bb.getInt());
+        nMatches(bb.getInt());
+        nLiteralPayloadBytes(bb.getInt());
+        nLmdPayloadBytes(bb.getInt());
 
         literalBits = bb.getInt();
         literalState0 = bb.getShort();
@@ -193,7 +193,7 @@ class LZFSEBlockHeader implements LZFSEConstants {
         bb.rewind().limit(V2_SIZE);
         IO.readFully(in, bb).flip();
 
-        nRawBytes = bb.getInt();
+        nRawBytes(bb.getInt());
 
         long v0 = bb.getLong();
         long v1 = bb.getLong();
@@ -202,22 +202,22 @@ class LZFSEBlockHeader implements LZFSEConstants {
         int headerSize = n(v2, 00, 32);
         int nCompressedPayload = headerSize - V2_SIZE - 4;
 
-        nLiterals = n(v0, 00, 20);
-        nLiteralPayloadBytes = n(v0, 20, 20);
+        nLiterals(n(v0, 00, 20));
+        nLiteralPayloadBytes(n(v0, 20, 20));
         literalBits = n(v0, 60, 03) - 7;
         literalState0 = n(v1, 00, 10);
         literalState1 = n(v1, 10, 10);
         literalState2 = n(v1, 20, 10);
         literalState3 = n(v1, 30, 10);
 
-        nMatches = n(v0, 40, 20);
-        nLmdPayloadBytes = n(v1, 40, 20);
+        nMatches(n(v0, 40, 20));
+        nLmdPayloadBytes(n(v1, 40, 20));
         lmdBits = n(v1, 60, 03) - 7;
         lState = n(v2, 32, 10);
         mState = n(v2, 42, 10);
         dState = n(v2, 52, 10);
 
-        nPayloadBytes = nLiteralPayloadBytes + nLmdPayloadBytes;
+        nPayloadBytes(nLiteralPayloadBytes + nLmdPayloadBytes);
 
         if (nCompressedPayload == 0) {
             clear(lFreq, mFreq, dFreq, literalFreq);
@@ -258,24 +258,66 @@ class LZFSEBlockHeader implements LZFSEConstants {
         return nRawBytes;
     }
 
+    private void nRawBytes(int v) throws LZFSEDecoderException {
+        if (v < 0) {
+            throw new LZFSEDecoderException();
+        }
+        this.nRawBytes = v;
+    }
+
     int nPayloadBytes() {
         return nPayloadBytes;
+    }
+
+    private void nPayloadBytes(int v) throws LZFSEDecoderException {
+        if (v < 0) {
+            throw new LZFSEDecoderException();
+        }
+        this.nPayloadBytes = v;
     }
 
     int nLiterals() {
         return nLiterals;
     }
 
+    private void nLiterals(int v) throws LZFSEDecoderException {
+        if (v < 0) {
+            throw new LZFSEDecoderException();
+        }
+        this.nLiterals = v;
+    }
+
     int nMatches() {
         return nMatches;
+    }
+
+    private void nMatches(int v) throws LZFSEDecoderException {
+        if (v < 0) {
+            throw new LZFSEDecoderException();
+        }
+        this.nMatches = v;
     }
 
     int nLiteralPayloadBytes() {
         return nLiteralPayloadBytes;
     }
 
+    private void nLiteralPayloadBytes(int v) throws LZFSEDecoderException {
+        if (v < 0) {
+            throw new LZFSEDecoderException();
+        }
+        this.nLiteralPayloadBytes = v;
+    }
+
     int nLmdPayloadBytes() {
         return nLmdPayloadBytes;
+    }
+
+    private void nLmdPayloadBytes(int v) throws LZFSEDecoderException {
+        if (v < 0) {
+            throw new LZFSEDecoderException();
+        }
+        this.nLmdPayloadBytes = v;
     }
 
     int literalBits() {

@@ -57,7 +57,9 @@ class BitInStream {
     @Nonnull
     BitInStream init(int n) throws LZFSEDecoderException {
         try {
-            if (n == 0) {
+            if (n > 0) {
+                throw new LZFSEDecoderException();
+            } else if (n == 0) {
                 in.position(in.position() - 7);
                 accum = in.getLong(in.position() - 1);
                 accum >>>= 8;

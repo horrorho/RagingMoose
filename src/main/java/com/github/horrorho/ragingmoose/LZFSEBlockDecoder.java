@@ -74,11 +74,11 @@ class LZFSEBlockDecoder extends LMDBlockDecoder implements LZFSEConstants {
         131068, 163836, 196604, 229372
     };
 
-    private final LZFSEValueDecoder lValueDecoder = new LZFSEValueDecoder(ENCODE_L_STATES);
-    private final LZFSEValueDecoder mValueDecoder = new LZFSEValueDecoder(ENCODE_M_STATES);
-    private final LZFSEValueDecoder dValueDecoder = new LZFSEValueDecoder(ENCODE_D_STATES);
+    private final LZFSEValueDecoder lValueDecoder; 
+    private final LZFSEValueDecoder mValueDecoder;  
+    private final LZFSEValueDecoder dValueDecoder; 
 
-    private final LZFSELiteralDecoder literalDecoder = new LZFSELiteralDecoder(ENCODE_LITERAL_STATES);
+    private final LZFSELiteralDecoder literalDecoder;
 
     private final byte[] literals = new byte[LITERALS_PER_BLOCK + 64];
     private int pos;
@@ -91,8 +91,12 @@ class LZFSEBlockDecoder extends LMDBlockDecoder implements LZFSEConstants {
     private int rawBytes;
     private int symbols;
 
-    LZFSEBlockDecoder(MatchBuffer mb) {
+    LZFSEBlockDecoder(MatchBuffer mb) throws LZFSEDecoderException {
         super(mb);
+        this.lValueDecoder = new LZFSEValueDecoder(ENCODE_L_STATES);
+        this.mValueDecoder = new LZFSEValueDecoder(ENCODE_M_STATES);
+        this.dValueDecoder = new LZFSEValueDecoder(ENCODE_D_STATES);
+        this.literalDecoder = new LZFSELiteralDecoder(ENCODE_LITERAL_STATES);
     }
 
     @Nonnull

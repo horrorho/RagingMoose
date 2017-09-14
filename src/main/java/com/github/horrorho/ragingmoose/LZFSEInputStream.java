@@ -184,7 +184,7 @@ public class LZFSEInputStream extends InputStream implements LZFSEConstants {
     }
 
     @Nonnull
-    LZFSEBlockDecoder lzfseBlockDecoder() {
+    LZFSEBlockDecoder lzfseBlockDecoder() throws LZFSEDecoderException {
         if (lzfseBlockDecoder == null) {
             lzfseBlockDecoder = new LZFSEBlockDecoder(matchBuffer());
         }

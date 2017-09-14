@@ -54,7 +54,7 @@ class LZFSELiteralDecoder {
     private int nLiterals;
     private int literalBits;
 
-    LZFSELiteralDecoder(int nStates) {
+    LZFSELiteralDecoder(int nStates) throws LZFSEDecoderException {
         this.tans = new TANS<>(nStates, TANS.Entry::new, TANS.Entry[]::new);
         this.state0 = new TANS.State();
         this.state1 = new TANS.State();

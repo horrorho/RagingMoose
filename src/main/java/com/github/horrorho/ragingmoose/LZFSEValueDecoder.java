@@ -53,7 +53,7 @@ class LZFSEValueDecoder {
     private final TANS<Entry> tans;
     private final TANS.State state;
 
-    LZFSEValueDecoder(int nStates) {
+    LZFSEValueDecoder(int nStates) throws LZFSEDecoderException {
         this.tans = new TANS<>(nStates, Entry::new, Entry[]::new);
         this.state = new TANS.State();
     }

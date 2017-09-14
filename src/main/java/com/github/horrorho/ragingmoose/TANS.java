@@ -95,7 +95,10 @@ final class TANS<T extends TANS.Entry> {
     }
 
     @Nonnull
-    static <T> T[] table(int n, Supplier<T> cons, IntFunction<T[]> generator) {
+    static <T> T[] table(int n, Supplier<T> cons, IntFunction<T[]> generator) throws LZFSEDecoderException {
+        if (n < 0) {
+            throw new LZFSEDecoderException();
+        }
         return Stream.generate(cons)
                 .limit(n)
                 .toArray(generator);
@@ -109,7 +112,7 @@ final class TANS<T extends TANS.Entry> {
         this.nZero = Integer.numberOfLeadingZeros(table.length);
     }
 
-    TANS(int n, Supplier<T> cons, IntFunction<T[]> generator) {
+    TANS(int n, Supplier<T> cons, IntFunction<T[]> generator) throws LZFSEDecoderException {
         this(TANS.<T>table(n, cons, generator));
     }
 
@@ -127,6 +130,9 @@ final class TANS<T extends TANS.Entry> {
 
     @Nonnull
     TANS<T> init(short[] weights) throws LZFSEDecoderException {
+        if (weights.length > 256) {
+            throw new LZFSEDecoderException();
+        }
         try {
             for (int i = 0, t = 0; i < weights.length; i++) {
                 t = fill((byte) i, weights[i], t);
