@@ -14,12 +14,14 @@ Unit tests are in place with support for extended tests using [tcgen](https://gi
 
 ## Should I use it?
 
-The raison d'être of RagingMoose is it's simplicity of integration into Java projects without the use of external dependencies/ interfacing. However I would **strongly** suggest using the reference [lzfse](https://github.com/lzfse/lzfse) compressor in some manner instead if at all possible.
+The raison d'être of RagingMoose is it's simplicity of integration into Java projects without the use of external dependencies/ interfacing.
 
-Reference lzfse executable/ ProcessBuilder:
+However I would **strongly** suggest using the reference [lzfse](https://github.com/lzfse/lzfse) compressor in some manner instead if at all possible:
+
+- Reference lzfse executable/ ProcessBuilder:
 A (convoluted) example using [ProcessBuilder](https://docs.oracle.com/javase/8/docs/api/java/lang/ProcessBuilder.html) can be found [here](https://github.com/horrorho/RagingMoose/blob/master/src/test/java/com/github/horrorho/ragingmoose/LZFSEInputStreamTest.java#L142). It uses a simple utility class [ProcessAssistant](https://github.com/horrorho/RagingMoose/blob/master/src/test/java/com/github/horrorho/ragingmoose/ProcessAssistant.java) to handle concurrent streaming.
 
-Reference lzfse library/ JNI:
+- Reference lzfse library/ JNI:
 [JNI](https://en.wikipedia.org/wiki/Java_Native_Interface) example [header](https://gist.github.com/horrorho/b5b2f7eadfa1d73560dadbe4a0a92b85) and [c code](https://gist.github.com/horrorho/1f9ab1742355c1edcb339935657bff31) for the following call:
 
 ```Java
