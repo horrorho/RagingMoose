@@ -79,6 +79,15 @@ A simple example that decompresses and prints the contents of an LZFSE compresse
 ## Benchmarks
 Decompression benchmarks using [JMH](http://openjdk.java.net/projects/code-tools/jmh/). The core benchmarking code is [here](https://gist.github.com/horrorho/56eb417ac415c3aa0893849713d54750). Tests are conducted on in-memory byte data. Use the figures as a rough guide only as your use case/ environment may differ significantly.
 
+- iOS 11 sqlitedb file. 460 bytes (16,384 bytes bytes uncompressed):
+
+```
+Benchmark                            Mode  Cnt      Score     Error  Units
+LZFSEBenchmark.lzfseJNI             thrpt   20  32444.002 ± 300.831  ops/s
+LZFSEBenchmark.lzfseProcessBuilder  thrpt   20   2086.615 ± 130.519  ops/s
+LZFSEBenchmark.ragingMoose          thrpt   20  12571.402 ± 458.201  ops/s
+```
+
 - J.R.R.Tolkien, The Hobbit. Chapter 1. 47,257 bytes (18,905 bytes compressed):
 
 ```
