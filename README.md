@@ -14,7 +14,7 @@ Unit tests are in place with support for extended tests using [tcgen](https://gi
 
 ## Should I use it?
 
-The raison d'être of RagingMoose is it's simplicity of integration into Java projects without the use of external dependencies/ interfacing.
+The raison d'être of RagingMoose is it's ease of integration into Java projects without the use of external dependencies/ interfacing.
 
 However I would **strongly** suggest using the reference [lzfse](https://github.com/lzfse/lzfse) compressor in some manner instead if at all possible:
 
@@ -76,28 +76,6 @@ A simple example that decompresses and prints the contents of an LZFSE compresse
     }
 ```
 
-
-## Extended unit tests
-[LZFSEInputStreamTest#tcgenTest](https://github.com/horrorho/RagingMoose/blob/master/src/test/java/com/github/horrorho/ragingmoose/LZFSEInputStreamTest.java#L107) is by default set to `@Ignore`. It requires both the [tcgen](https://gist.github.com/horrorho/7837e9b83f2aa42d2781374c99fd0ba3) and [lzfse](https://github.com/lzfse/lzfse) binaries to be on the command path either as `.exe` binaries or their extensionless counterparts.
-
-With the binaries in place and `@Ignore` deleted/ commented out an additional series of tests is performed. These generate test data using `tcgen`. This data is then compressed with the reference `lzfse` binary and in turn decompressed by RagingMoose. We expected the decompressed data to match the generated test data.
-
-The data is cut to predetermined lengths to hit the various underlying block types (bvx-, bvxn, bvx2).
-
-```
--------------------------------------------------------
- T E S T S
--------------------------------------------------------
-Running com.github.horrorho.ragingmoose.LZFSEInputStreamTest
-Tests run: 32, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 14.196 sec - in com.github.horrorho.ragingmoose.LZFSEInputStreamTest
-
-Results :
-
-Tests run: 32, Failures: 0, Errors: 0, Skipped: 1
-```
-
-[LZFSEInputStreamTest#tcgenTestExt](https://github.com/horrorho/RagingMoose/blob/master/src/test/java/com/github/horrorho/ragingmoose/LZFSEInputStreamTest.java#L143) is by default set to `@Ignore`. It's essentially a sanity test and bypasses RagingMoose entirely and compresses/ decompresses using [lzfse](https://github.com/lzfse/lzfse). It's not suitable as a benchmark as the chokepoint is in [tcgen](https://gist.github.com/horrorho/7837e9b83f2aa42d2781374c99fd0ba3) test data generation.
-
 ## Benchmarks
 Decompression benchmarks using [JMH](http://openjdk.java.net/projects/code-tools/jmh/). The core benchmarking code is [here](https://gist.github.com/horrorho/56eb417ac415c3aa0893849713d54750). Tests are conducted on in-memory byte data. Use the figures as a rough guide only as your use case/ environment may differ significantly.
 
@@ -127,6 +105,28 @@ LZFSEBenchmark.lzfseJNI             thrpt   20  11.388 ± 0.220  ops/s
 LZFSEBenchmark.lzfseProcessBuilder  thrpt   20   5.989 ± 0.166  ops/s
 LZFSEBenchmark.ragingMoose          thrpt   20   4.583 ± 0.150  ops/s
 ```
+
+## Extended unit tests
+[LZFSEInputStreamTest#tcgenTest](https://github.com/horrorho/RagingMoose/blob/master/src/test/java/com/github/horrorho/ragingmoose/LZFSEInputStreamTest.java#L107) is by default set to `@Ignore`. It requires both the [tcgen](https://gist.github.com/horrorho/7837e9b83f2aa42d2781374c99fd0ba3) and [lzfse](https://github.com/lzfse/lzfse) binaries to be on the command path either as `.exe` binaries or their extensionless counterparts.
+
+With the binaries in place and `@Ignore` deleted/ commented out an additional series of tests is performed. These generate test data using `tcgen`. This data is then compressed with the reference `lzfse` binary and in turn decompressed by RagingMoose. We expected the decompressed data to match the generated test data.
+
+The data is cut to predetermined lengths to hit the various underlying block types (bvx-, bvxn, bvx2).
+
+```
+-------------------------------------------------------
+ T E S T S
+-------------------------------------------------------
+Running com.github.horrorho.ragingmoose.LZFSEInputStreamTest
+Tests run: 32, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 14.196 sec - in com.github.horrorho.ragingmoose.LZFSEInputStreamTest
+
+Results :
+
+Tests run: 32, Failures: 0, Errors: 0, Skipped: 1
+```
+
+[LZFSEInputStreamTest#tcgenTestExt](https://github.com/horrorho/RagingMoose/blob/master/src/test/java/com/github/horrorho/ragingmoose/LZFSEInputStreamTest.java#L143) is by default set to `@Ignore`. It's essentially a sanity test and bypasses RagingMoose entirely and compresses/ decompresses using [lzfse](https://github.com/lzfse/lzfse). It's not suitable as a benchmark as the chokepoint is in [tcgen](https://gist.github.com/horrorho/7837e9b83f2aa42d2781374c99fd0ba3) test data generation.
+
 
 ## What's with the name?
 
