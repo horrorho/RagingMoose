@@ -82,19 +82,24 @@ public class LZFSEInputStream extends InputStream implements LZFSEConstants {
 
     @Override
     public int read() throws IOException {
-        while (!eos) {
-            if (decoder == null) {
-                next();
-            } else {
-                int b = decoder.read();
-                if (b == -1) {
-                    decoder = null;
+        try {
+            while (!eos) {
+                if (decoder == null) {
+                    next();
                 } else {
-                    return b;
+                    int b = decoder.read();
+                    if (b == -1) {
+                        decoder = null;
+                    } else {
+                        return b;
+                    }
                 }
             }
+            return -1;
+            
+        } catch (RuntimeException ex) {
+            throw new LZFSEDecoderException("internal error", ex);
         }
-        return -1;
     }
 
     @Override
@@ -105,18 +110,23 @@ public class LZFSEInputStream extends InputStream implements LZFSEConstants {
         if (len == 0) {
             return 0;
         }
-        while (!eos) {
-            if (decoder == null) {
-                next();
-            } else {
-                int n = decoder.read(b, off, len);
-                if (n == 0) {
-                    decoder = null;
+        try {
+            while (!eos) {
+                if (decoder == null) {
+                    next();
+                } else {
+                    int n = decoder.read(b, off, len);
+                    if (n == 0) {
+                        decoder = null;
+                    }
+                    return n;
                 }
-                return n;
             }
+            return -1;
+            
+        } catch (RuntimeException ex) {
+            throw new LZFSEDecoderException("internal error", ex);
         }
-        return -1;
     }
 
     void next() throws IOException {
