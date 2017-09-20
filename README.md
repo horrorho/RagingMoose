@@ -1,6 +1,6 @@
 # RagingMoose
 
-Experimental Java LZFSE capable decompressor. Work in progress.
+Experimental Java LZFSE capable decompressor.
 
 
 ## What is it?
